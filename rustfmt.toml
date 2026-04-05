@@ -1,0 +1,22 @@
+# Rustfmt configuration
+# Enables nightly-only options below
+unstable_features = true
+
+# Allow longer lines to reduce unnecessary line breaks
+max_width = 120
+# Allow function calls to stay on one line if they fit
+fn_call_width = 100
+# Allow struct literals to stay on one line
+struct_lit_width = 60
+# Allow single-line expressions in match arms
+single_line_if_else_max_width = 60
+
+# Comment hygiene
+# Wrap `//` comments at comment_width
+wrap_comments = true
+# Maximum width for comment lines (nightly)
+comment_width = 80
+# Normalize `//` vs `/* */` style — prefers `//` (nightly)
+normalize_comments = true
+# Normalize `#[doc = "..."]` attributes to `///` (nightly)
+normalize_doc_attributes = true

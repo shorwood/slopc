@@ -1,0 +1,27 @@
+[package]
+name = "slopc"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+description = "A proc macro that calls an LLM to generate function implementations at compile time. Because why tf not."
+license = "AGPL-3.0-only"
+repository = "https://github.com/shorwood/slopc"
+readme = "README.md"
+keywords = ["proc-macro", "llm", "codegen", "ai", "slop"]
+categories = ["development-tools::procedural-macro-helpers"]
+exclude = ["examples/", "target/", ".github/", "flake.nix", "flake.lock", ".env", ".envrc"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "2", features = ["full", "parsing", "visit"] }
+quote = "1"
+proc-macro2 = "1"
+darling = "0.20"
+ureq = { version = "2", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+figment = { version = "0.10", features = ["toml", "env"] }
+toml = "0.8"
+dotenvy = "0.15"
