@@ -493,7 +493,7 @@ fn build_system_prompt(deps: &str) -> String {
          NEVER use .unwrap(), .expect(), panic!(), todo!(), or unimplemented!() — handle errors gracefully \
          with pattern matching, .unwrap_or(), .unwrap_or_default(), or early returns. \
          If the doc comments contain ``` code blocks with assertions, those will be \
-         compiled and run as tests — the function MUST pass them.",
+         compiled and run as tests — the function MUST pass them. Make no Mistakes.",
     );
 
     if !deps.is_empty() {
