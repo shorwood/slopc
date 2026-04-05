@@ -17,6 +17,7 @@ struct SlopConfig {
     retries: usize,
     provider: String,
     api_key_env: String,
+    run_doctests: bool,
 }
 
 impl Default for SlopConfig {
@@ -26,6 +27,7 @@ impl Default for SlopConfig {
             retries: 5,
             provider: "https://openrouter.ai/api/v1/chat/completions".into(),
             api_key_env: "OPEN_ROUTER_API_KEY".into(),
+            run_doctests: false,
         }
     }
 }
@@ -54,6 +56,8 @@ struct SlopArgs {
     #[darling(default)]
     nocache: bool,
     #[darling(default)]
+    run_doctests: Option<bool>,
+    #[darling(default)]
     dump: Option<String>,
     #[darling(default)]
     context_file: Option<String>,
@@ -67,6 +71,7 @@ struct ResolvedConfig {
     retries: usize,
     provider: String,
     api_key_env: String,
+    run_doctests: bool,
 }
 
 impl ResolvedConfig {
@@ -76,6 +81,7 @@ impl ResolvedConfig {
             retries: args.retries.unwrap_or(cfg.retries),
             provider: args.provider.clone().unwrap_or(cfg.provider),
             api_key_env: args.api_key_env.clone().unwrap_or(cfg.api_key_env),
+            run_doctests: args.run_doctests.unwrap_or(cfg.run_doctests),
         }
     }
 }
@@ -258,33 +264,37 @@ pub fn slop(attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
 
-        // Run doctests if present — verify behavior, not just types.
-        if let Some(ref tests) = doctests {
-            match try_run(&check_code, tests, &tag) {
-                Ok(()) => {
-                    eprintln!(
-                        "  {:>12} {fn_name} (attempt {attempt}/{retries}, doctests passed)",
-                        "Slop",
-                        retries = rc.retries
-                    );
+        // Run doctests if present and enabled, verify behavior, not just types.
+        if rc.run_doctests {
+            if let Some(ref tests) = doctests {
+                match try_run(&check_code, tests, &tag) {
+                    Ok(()) => {
+                        eprintln!(
+                            "  {:>12} {fn_name} (attempt {attempt}/{retries}, doctests passed)",
+                            "Slop",
+                            retries = rc.retries
+                        );
+                    }
+                    Err(runtime_err) => {
+                        eprintln!(
+                            "  {:>12} {fn_name} (doctest failed, attempt {attempt}/{retries})",
+                            "Retrying",
+                            retries = rc.retries
+                        );
+                        let fix_msg = format!(
+                            "The code compiles but fails at runtime. The following doctests failed:\n\n\
+                             ```\n{tests}\n```\n\n\
+                             Runtime error:\n\n{runtime_err}\n\n\
+                             Fix the function so it passes these tests. \
+                             Return ONLY the complete corrected function."
+                        );
+                        messages.push(serde_json::json!({"role": "assistant", "content": &content}));
+                        messages.push(serde_json::json!({"role": "user", "content": fix_msg}));
+                        continue;
+                    }
                 }
-                Err(runtime_err) => {
-                    eprintln!(
-                        "  {:>12} {fn_name} (doctest failed, attempt {attempt}/{retries})",
-                        "Retrying",
-                        retries = rc.retries
-                    );
-                    let fix_msg = format!(
-                        "The code compiles but fails at runtime. The following doctests failed:\n\n\
-                         ```\n{tests}\n```\n\n\
-                         Runtime error:\n\n{runtime_err}\n\n\
-                         Fix the function so it passes these tests. \
-                         Return ONLY the complete corrected function."
-                    );
-                    messages.push(serde_json::json!({"role": "assistant", "content": &content}));
-                    messages.push(serde_json::json!({"role": "user", "content": fix_msg}));
-                    continue;
-                }
+            } else {
+                eprintln!("  {:>12} {fn_name} (attempt {attempt}/{retries})", "Slop", retries = rc.retries);
             }
         } else {
             eprintln!("  {:>12} {fn_name} (attempt {attempt}/{retries})", "Slop", retries = rc.retries);
