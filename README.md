@@ -62,12 +62,10 @@ fn main() {
 ## How the sausage is made
 
 - Grabs the fn signature + doc comments + body + `Cargo.toml` deps as context
-- Auto-resolves custom types from `src/` (structs, enums, traits used in the signature)
-- Loads `.env` from the workspace root
+- Loads config from attribute args > env vars > `slop.toml` > defaults
 - Hits the LLM API, verifies the output with `rustc`, feeds errors back and retries
-- If doc comments contain ` ``` ` code blocks, compiles and runs them as assertions — runtime failures get fed back to the LLM too
-- Caches results in `target/slop-cache/` so you don't burn tokens on every build
-
+- If doc comments contain doctests, conditionally compiles and runs them as assertions (opt-in via `run_doctests`)
+- Caches results in `target/slop-cache/` so you don't burn tokens on every build (unless you use `nocache`)
 
 ## Configuration
 
@@ -77,10 +75,11 @@ If for whatever reason you consider using this (which again, please don't), you 
 // slop.rs
 #[slop(
     retries = 5,
-    model = "gpt-4o-mini",                                        // defaults to `gpt-4o-mini`
+    model = "openai/gpt-4o-mini",                                        // defaults to `gpt-4o-mini`
     provider = "https://openrouter.ai/api/v1/chat/completions",   // defaults to openrouter's endpoint
     api_key_env = "OPEN_ROUTER_API_KEY",                          // defaults to `OPEN_ROUTER_API_KEY`
     nocache,                                                      // skip cache, re-generate
+    run_doctests = true,                                          // compile & run doc assertions (default: false)
     dump = "generated/my_fn.rs",                                  // write output to a file, if you're curious.
     context_file = "src/types.rs",                                // feed extra context
     hint = "use itertools",                                       // nudges the LLM
@@ -91,18 +90,20 @@ fn my_fn() -> i32 { todo!() }
 
 ```toml
 # slop.toml
-model = "gpt-4o-mini"
+model = "openai/gpt-4o-mini"
 retries = 5
 provider = "https://openrouter.ai/api/v1/chat/completions"
 api_key_env = "OPEN_ROUTER_API_KEY"
+run_doctests = false  # opt-in: compile & execute doc assertions at build time
 ```
 
 ```bash
 # .env
-export SLOP_MODEL="anthropic/claude-3.5-sonnet"
+export SLOP_MODEL="mistral-large-latest"
 export SLOP_RETRIES=3
-export SLOP_PROVIDER="https://api.openai.com/v1/chat/completions"
-export SLOP_API_KEY_ENV="OPENAI_API_KEY"
+export SLOP_PROVIDER="https://api.mistral.ai/v1/chat/completions"
+export SLOP_API_KEY_ENV="MISTRAL_API_KEY"
+export SLOP_RUN_DOCTESTS=true  # you asked for it
 ```
 
 ## License
